@@ -116,7 +116,12 @@ class Instance
                 $container = Yii::$container;
             }
             unset($reference['class']);
-            return $container->get($class, [], $reference);
+            $component = $container->get($class, [], $reference);
+            if ($type === null || $component instanceof $type) {
+                return $component;
+            }
+
+            throw new InvalidConfigException('Invalid data type: ' . $class . '. ' . $type . ' is expected.');
         } elseif (empty($reference)) {
             throw new InvalidConfigException('The required component is not specified.');
         }
@@ -130,14 +135,14 @@ class Instance
         if ($reference instanceof self) {
             try {
                 $component = $reference->get($container);
-            } catch(\ReflectionException $e) {
+            } catch (\ReflectionException $e) {
                 throw new InvalidConfigException('Failed to instantiate component or class "' . $reference->id . '".', 0, $e);
             }
             if ($type === null || $component instanceof $type) {
                 return $component;
-            } else {
-                throw new InvalidConfigException('"' . $reference->id . '" refers to a ' . get_class($component) . " component. $type is expected.");
             }
+
+            throw new InvalidConfigException('"' . $reference->id . '" refers to a ' . get_class($component) . " component. $type is expected.");
         }
 
         $valueType = is_object($reference) ? get_class($reference) : gettype($reference);
@@ -157,9 +162,9 @@ class Instance
         }
         if (Yii::$app && Yii::$app->has($this->id)) {
             return Yii::$app->get($this->id);
-        } else {
-            return Yii::$container->get($this->id);
         }
+
+        return Yii::$container->get($this->id);
     }
 
     /**
